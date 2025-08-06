@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="myserver" type="ssh/sftp" uuid="0f289a31-1db1-48a5-a1f7-c7aa31c2de19">
+        <config>
+          <option name="projectRootOnTarget" value="/root/miniDocker" />
+          <option name="serverName" value="myserver" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="compiledExecutablesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/root/miniDocker" />
+              </VolumeState>
+            </option>
+            <option name="goPath" value="/root/go" />
+            <option name="goRoot" value="/usr/bin/go" />
+            <option name="goVersion" value="go1.22.9 (Red Hat 1.22.9-1.0.1.al8) linux/amd64" />
+            <option name="projectSourcesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/root/miniDocker" />
+              </VolumeState>
+            </option>
+          </config>
+        </ContributedStateBase>
+      </target>
+      <target name="root@47.111.148.27:22" type="ssh/sftp" uuid="cc888ebd-0995-4559-a041-b1f9bc8101b5">
+        <config>
+          <option name="projectRootOnTarget" value="/root/miniDocker" />
+          <option name="serverName" value="root@47.111.148.27:22 password" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="compiledExecutablesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/root/miniDocker" />
+              </VolumeState>
+            </option>
+            <option name="goPath" value="/root/go" />
+            <option name="goRoot" value="/usr/bin/go" />
+            <option name="goVersion" value="go1.22.9 (Red Hat 1.22.9-1.0.1.al8) linux/amd64" />
+            <option name="projectSourcesVolume">
+              <VolumeState>
+                <option name="remotePath" value="/root/miniDocker" />
+              </VolumeState>
+            </option>
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
