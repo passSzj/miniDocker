@@ -38,6 +38,10 @@ func RunContainerInitProcess() error {
 	return nil
 }
 
+// index0：标准输入
+// index1：标准输出
+// index2：标准错误
+// index3：带过来的第一个FD，也就是readPipe
 const fdIndex = 3
 
 func readUserCommand() []string {
@@ -71,10 +75,13 @@ func mountProc() {
 	// 可以执行 mount -t proc proc /proc 命令重新挂载来解决
 	// ---分割线---
 	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
-	_ = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	_ = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "") //实现容器访问系统信息   容器内查看ps等
 }
 
 /*
+	首先传播类型设置为PRIVATE,避免本 namespace 中的挂载事件外泄，即导致别的namespace也被挂载，确保挂载操作不会影响宿主机或其他容器。
+	再挂载一个新的 proc 文件系统到容器内 /proc 目录，从而让容器拥有自己的进程视图。
+
 	mountProc()  涉及内容补充
 	Proc文件系统（procfs）
 	定义：一个虚拟文件系统，提供内核和进程信息的接口

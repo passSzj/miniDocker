@@ -1,6 +1,8 @@
 package main
 
 import (
+	"miniDocker/cgroups"
+	"miniDocker/cgroups/subsystems"
 	"os"
 	"strings"
 
@@ -14,16 +16,22 @@ import (
 进程，然后在子进程中，调用/proc/self/exe,也就是调用自己，发送init参数，调用我们写的init方法，
 去初始化容器的一些资源。
 */
-func Run(tty bool, comArray []string) {
-	parent, wirtePipe := container.NewParentProcess(tty)
+func Run(tty bool, comArray []string, res *subsystems.ResourceConfig) {
+	parent, writePipe := container.NewParentProcess(tty)
 	if parent == nil {
-		log.Error("NewParentProcess error")
+		log.Errorf("New parent process error")
 		return
 	}
 	if err := parent.Start(); err != nil {
-		log.Error(err)
+		log.Errorf("Run parent.Start err:%v", err)
 	}
-	sendInitCommand(comArray, wirtePipe) //创建子进程后传递参数
+	// 创建cgroup manager, 并通过调用set和apply设置资源限制并使限制在容器上生效
+	cgroupManager := cgroups.NewCgroupManager("mydocker-cgroup")
+	defer cgroupManager.Destroy() // 结束时销毁cgroup
+	_ = cgroupManager.Set(res)
+	_ = cgroupManager.Apply(parent.Process.Pid, res)
+
+	sendInitCommand(comArray, writePipe) //创建子进程后传递参数
 	_ = parent.Wait()
 
 }

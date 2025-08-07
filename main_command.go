@@ -4,6 +4,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"miniDocker/cgroups/subsystems"
 	"miniDocker/container"
 )
 
@@ -16,6 +17,10 @@ var runCommand = cli.Command{
 			Name:  "it", // 简单起见，这里把 -i 和 -t 参数合并成一个
 			Usage: "enable tty",
 		},
+		cli.StringFlag{
+			Name:  "mem",                           //限制内存使用
+			Usage: "memory limit, e.g.: -mem 100m", // 限制内存使用率
+		},
 	},
 	/*
 	  这里是run命令执行的真正函数。
@@ -27,9 +32,17 @@ var runCommand = cli.Command{
 		if len(context.Args()) < 1 {
 			return fmt.Errorf("missing container command")
 		}
-		cmd := context.Args().Get(0)
+		var cmdArray []string
+		for _, arg := range context.Args() {
+			cmdArray = append(cmdArray, arg)
+		}
 		tty := context.Bool("it")
-		Run(tty, []string{cmd})
+		resConf := &subsystems.ResourceConfig{
+			MemoryLimit: context.String("mem"),
+		}
+		log.Info("resConf: ", resConf)
+
+		Run(tty, cmdArray, resConf)
 		return nil
 	},
 }
