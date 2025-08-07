@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"miniDocker/container"
@@ -13,11 +14,24 @@ import (
 进程，然后在子进程中，调用/proc/self/exe,也就是调用自己，发送init参数，调用我们写的init方法，
 去初始化容器的一些资源。
 */
-func Run(tty bool, cmd string) {
-	parent := container.NewParentProcess(tty, cmd)
+func Run(tty bool, comArray []string) {
+	parent, wirtePipe := container.NewParentProcess(tty)
+	if parent == nil {
+		log.Error("NewParentProcess error")
+		return
+	}
 	if err := parent.Start(); err != nil {
 		log.Error(err)
 	}
+	sendInitCommand(comArray, wirtePipe) //创建子进程后传递参数
 	_ = parent.Wait()
-	os.Exit(-1)
+
+}
+
+// sendInitCommand 通过writePipe将命令发到子进程
+func sendInitCommand(comArray []string, writePipe *os.File) {
+	command := strings.Join(comArray, " ")
+	log.Infof("command all is %s", command)
+	_, _ = writePipe.WriteString(command)
+	_ = writePipe.Close() // 关闭管道，通知子进程
 }
