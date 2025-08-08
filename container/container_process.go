@@ -17,7 +17,7 @@ import (
 3.下面的clone参数就是去fork出来一个新进程，并且使用了namespace隔离新创建的进程和外部环境。
 4.如果用户指定了-it参数，就需要把当前进程的输入输出导入到标准输入输出上
 */
-func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, volume string) (*exec.Cmd, *os.File) {
 
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
@@ -43,16 +43,28 @@ func NewParentProcess(tty bool) (*exec.Cmd, *os.File) {
 	}
 	cmd.ExtraFiles = []*os.File{readPipe} // 将读取方转入子进程
 	rootPath := "/root"
-	NewWorkSpace(rootPath) // 设置工作目录为 /root/busybox
+	NewWorkSpace(rootPath, volume) // 设置工作目录为 /root/busybox
 	cmd.Dir = path.Join(rootPath, "merged")
 	return cmd, writePipe
 }
 
 // NewWorkSpace Create an Overlay2 filesystem as container root workspace
-func NewWorkSpace(rootPath string) {
+func NewWorkSpace(rootPath string, volume string) {
 	createLower(rootPath)
 	createDirs(rootPath)
 	mountOverlayFS(rootPath)
+
+	// 如果有volume挂载，则需要将volume挂载到merged目录下
+	if volume != "" {
+		mntPath := path.Join(rootPath, "merged") // 容器的在宿主机的实际目录
+		hostPath, containerPath, err := volumeExtract(volume)
+		if err != nil {
+			log.Errorf("volumeExtract error: %v", err)
+			return
+		}
+		// 挂载volume到merged目录下
+		mountVolume(mntPath, hostPath, containerPath)
+	}
 }
 
 // createLower 将busybox作为overlayfs的lower层
@@ -110,8 +122,22 @@ func mountOverlayFS(rootPath string) {
 }
 
 // DeleteWorkSpace Delete the AUFS filesystem while container exit
-func DeleteWorkSpace(rootPath string) {
-	umountOverlayFS(path.Join(rootPath, "merged"))
+func DeleteWorkSpace(rootPath string, volume string) {
+	mntPath := path.Join(rootPath, "merged") //容器的在宿主机的实际目录
+
+	//umount volume
+	//先umount volume   如果先把overlayfs卸载了，导致挂载在容器外的数据会被删除
+	if volume != "" {
+		_, containerPath, err := volumeExtract(volume)
+		if err != nil {
+			log.Errorf("volumeExtract error: %v", err)
+			return
+		}
+		umountVolume(mntPath, containerPath)
+	}
+
+	//解除挂载
+	umountOverlayFS(mntPath)
 	deleteDirs(rootPath)
 }
 

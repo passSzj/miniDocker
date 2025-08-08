@@ -21,6 +21,18 @@ var runCommand = cli.Command{
 			Name:  "mem",                           //限制内存使用
 			Usage: "memory limit, e.g.: -mem 100m", // 限制内存使用率
 		},
+		cli.StringFlag{
+			Name:  "cpu",
+			Usage: "cpu quota,e.g.: -cpu 100", // 限制进程 cpu 使用率
+		},
+		cli.StringFlag{
+			Name:  "cpuset",
+			Usage: "cpuset limit,e.g.: -cpuset 2,4", // 限制进程 cpu 使用率
+		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: "volume,e.g.: -v /etc/conf:/etc/conf", // 挂载目录
+		},
 	},
 	/*
 	  这里是run命令执行的真正函数。
@@ -39,10 +51,12 @@ var runCommand = cli.Command{
 		tty := context.Bool("it")
 		resConf := &subsystems.ResourceConfig{
 			MemoryLimit: context.String("mem"),
+			CpuSet:      context.String("cpuset"),
+			CpuCfsQuota: context.Int("cpu"),
 		}
 		log.Info("resConf: ", resConf)
-
-		Run(tty, cmdArray, resConf)
+		volume := context.String("v")
+		Run(tty, cmdArray, resConf, volume)
 		return nil
 	},
 }
