@@ -37,6 +37,10 @@ var runCommand = cli.Command{
 			Name:  "v",
 			Usage: "volume,e.g.: -v /etc/conf:/etc/conf", // 挂载目录
 		},
+		cli.StringFlag{
+			Name:  "name",
+			Usage: "container name", // 指定容器名称
+		},
 	},
 	/*
 	  这里是run命令执行的真正函数。
@@ -54,11 +58,14 @@ var runCommand = cli.Command{
 		}
 		tty := context.Bool("it")
 		detach := context.Bool("d")
-
+		containerName := context.String("name")
 		if tty && detach {
 			return fmt.Errorf("tty and detach cannot be used together")
 		}
-
+		if !detach { // 如果不是指定后台运行，就默认前台运行
+			tty = true
+		}
+		log.Infof("createTty %v", tty)
 		resConf := &subsystems.ResourceConfig{
 			MemoryLimit: context.String("mem"),
 			CpuSet:      context.String("cpuset"),
@@ -66,7 +73,7 @@ var runCommand = cli.Command{
 		}
 		log.Info("resConf: ", resConf)
 		volume := context.String("v")
-		Run(tty, cmdArray, resConf, volume)
+		Run(tty, cmdArray, resConf, volume, containerName)
 		return nil
 	},
 }
@@ -94,6 +101,15 @@ var commitCommand = cli.Command{
 		}
 		imageName := context.Args().Get(0)
 		commitContainer(imageName)
+		return nil
+	},
+}
+
+var listCommand = cli.Command{
+	Name:  "ps",
+	Usage: "list all the containers",
+	Action: func(context *cli.Context) error {
+		ListContainers()
 		return nil
 	},
 }
