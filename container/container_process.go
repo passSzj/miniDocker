@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"miniDocker/constant"
 	"os"
 	"os/exec"
 	"path"
@@ -17,6 +18,8 @@ const (
 	InfoLocFormat = InfoLoc + "%s/"
 	ConfigName    = "config.json"
 	IDLength      = 10
+
+	LogFile = "%s-json.log" // 日志文件名格式
 )
 
 type Info struct {
@@ -36,7 +39,7 @@ type Info struct {
 3.下面的clone参数就是去fork出来一个新进程，并且使用了namespace隔离新创建的进程和外部环境。
 4.如果用户指定了-it参数，就需要把当前进程的输入输出导入到标准输入输出上
 */
-func NewParentProcess(tty bool, volume string) (*exec.Cmd, *os.File) {
+func NewParentProcess(tty bool, volume string, containerId string) (*exec.Cmd, *os.File) {
 
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
@@ -59,6 +62,21 @@ func NewParentProcess(tty bool, volume string) (*exec.Cmd, *os.File) {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
+	} else {
+		//后台运行   将标准输入输出重定向到日志文件
+		dirPath := fmt.Sprintf(InfoLocFormat, containerId)
+		if err := os.MkdirAll(dirPath, constant.Perm0622); err != nil {
+			log.Errorf("mkdir %s error: %v", dirPath, err)
+			return nil, nil
+		}
+		stdLogFilePath := dirPath + GetLogfile(containerId)
+		stdLogFile, err := os.Create(stdLogFilePath)
+		if err != nil {
+			log.Errorf("NewParentProcess create file %s error %v", stdLogFilePath, err)
+			return nil, nil
+		}
+		cmd.Stdout = stdLogFile
+		cmd.Stderr = stdLogFile
 	}
 	cmd.ExtraFiles = []*os.File{readPipe} // 将读取方转入子进程
 	rootPath := "/root"
@@ -192,4 +210,8 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func GetLogfile(containerId string) string {
+	return fmt.Sprintf(LogFile, containerId)
 }
