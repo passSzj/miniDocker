@@ -32,8 +32,10 @@ func Run(tty bool, comArray []string, res *subsystems.ResourceConfig, volume str
 	_ = cgroupManager.Apply(parent.Process.Pid, res)
 
 	sendInitCommand(comArray, writePipe) //创建子进程后传递参数
-	_ = parent.Wait()
-	container.DeleteWorkSpace("/root/", volume)
+	if tty {
+		_ = parent.Wait()
+		container.DeleteWorkSpace("/root/", volume)
+	}
 }
 
 // sendInitCommand 通过writePipe将命令发到子进程
